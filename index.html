@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>HackEye Orbit — Mission Control</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#07080C;--surf:#0F1117;--card:#13161E;--bord:#1C2032;--ind:#7C6AFA;--coral:#F97066;--amb:#F59E0B;--mint:#34D399;--txt:#E8EAF0;--mut:#5B6480;--dim:#8B93B0}
+html,body{background:var(--bg);color:var(--txt);font-family:'Inter',sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--bord);border-radius:4px}
+
+/* PAGES */
+.page{display:none}
+.page.active{display:flex;flex-direction:column;min-height:100vh}
+
+/* LOGIN */
+#pg-login{align-items:center;justify-content:center;
+  background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(124,106,250,.18) 0%,transparent 60%)}
+.login-card{
+  background:var(--card);border:1px solid var(--bord);border-radius:22px;
+  padding:44px 40px;width:100%;max-width:440px;
+  display:flex;flex-direction:column;gap:22px;
+  box-shadow:0 32px 80px rgba(0,0,0,.7);animation:fadeUp .4s ease both}
+.login-logo{text-align:center;font-size:40px;line-height:1;margin-bottom:-4px}
+.login-title{font-size:28px;font-weight:900;text-align:center;letter-spacing:-.7px;line-height:1.1}
+.login-title em{color:var(--ind);font-style:normal}
+.login-sub{font-size:13px;color:var(--mut);text-align:center;margin-top:-10px}
+.login-hint{font-size:11px;color:var(--mut);text-align:center;line-height:1.6;border:1px solid var(--bord);border-radius:10px;padding:10px 14px;background:var(--surf)}
+
+/* NAV */
+.nav{display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;border-bottom:1px solid var(--bord);
+  position:sticky;top:0;background:rgba(7,8,12,.85);backdrop-filter:blur(12px);z-index:100}
+.nav-logo{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:900;letter-spacing:-.4px}
+.nav-logo em{color:var(--ind);font-style:normal}
+.nav-r{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.nav-name{font-weight:700;font-size:13px}
+.badge{display:inline-flex;align-items:center;gap:5px;border-radius:20px;font-size:11px;font-weight:700;padding:3px 12px;border:1px solid}
+.b-leader{background:rgba(245,158,11,.1);color:var(--amb);border-color:rgba(245,158,11,.25)}
+.b-member{background:rgba(124,106,250,.1);color:var(--ind);border-color:rgba(124,106,250,.25)}
+
+/* STATS */
+.stat-row{display:flex;gap:10px;padding:18px 20px 6px;flex-wrap:wrap}
+.sc{flex:1;min-width:80px;background:var(--card);border:1px solid var(--bord);border-radius:14px;
+  padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:4px;
+  transition:border-color .2s,transform .15s;cursor:default}
+.sc:hover{border-color:rgba(124,106,250,.35);transform:translateY(-2px)}
+.sc-ico{font-size:18px;line-height:1}
+.sc-val{font-size:26px;font-weight:900;font-family:'JetBrains Mono',monospace;line-height:1.1}
+.sc-lbl{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.7px;white-space:nowrap;text-align:center}
+
+/* LAYOUT */
+.wrap{max-width:1320px;margin:0 auto;width:100%;padding:0 20px 60px}
+.leader-grid{display:grid;grid-template-columns:1fr 310px 255px;gap:14px;margin:14px 0}
+.member-grid{display:grid;grid-template-columns:1fr;gap:14px;margin:14px 0}
+.sec-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+@media(max-width:1080px){.leader-grid{grid-template-columns:1fr 290px}}
+@media(max-width:760px){.leader-grid,.sec-grid{grid-template-columns:1fr}}
+
+/* PANEL */
+.panel{background:var(--card);border:1px solid var(--bord);border-radius:16px;overflow:hidden;
+  transition:border-color .2s;animation:fadeUp .35s ease both}
+.panel:hover{border-color:rgba(124,106,250,.2)}
+.ph{display:flex;align-items:center;justify-content:space-between;
+  padding:13px 18px;border-bottom:1px solid var(--bord);background:var(--surf)}
+.pt{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700}
+.ph-hint{font-size:11px;color:var(--mut)}
+.pb{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+
+/* ORBIT */
+.orbit-outer{min-height:370px}
+.orbit-wrap{position:relative;height:320px;
+  background:linear-gradient(180deg,rgba(124,106,250,.05) 0%,transparent 100%)}
+#oc{width:100%;height:100%;display:block;cursor:grab}
+#oc:active{cursor:grabbing}
+.oleg{position:absolute;bottom:12px;left:14px;display:flex;gap:12px;flex-wrap:wrap}
+.oli{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--dim)}
+.old{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* FIELDS */
+.fg{display:flex;flex-direction:column;gap:5px}
+.fr{display:flex;gap:10px}
+.fr .fg{flex:1}
+.lbl{font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.5px}
+.inp{background:var(--surf);border:1px solid var(--bord);border-radius:10px;
+  padding:9px 13px;color:var(--txt);font-size:13px;font-family:'Inter',sans-serif;
+  width:100%;outline:none;transition:border-color .15s,box-shadow .15s;resize:none;
+  -webkit-appearance:none}
+.inp:focus{border-color:var(--ind);box-shadow:0 0 0 3px rgba(124,106,250,.18)}
+select.inp{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%235B6480' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;cursor:pointer}
+.err{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--coral);
+  padding:8px 12px;background:rgba(249,112,102,.07);border-radius:8px;border:1px solid rgba(249,112,102,.18)}
+
+/* ROSTER / LEADERBOARD */
+.rr{display:flex;align-items:center;gap:10px;padding:7px 0;
+  border-bottom:1px solid rgba(28,32,50,.7)}
+.rr:last-child{border:none}
+.av{display:flex;align-items:center;justify-content:center;border-radius:50%;
+  font-weight:800;flex-shrink:0;line-height:1}
+.ri{flex:1;min-width:0}
+.rn{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}
+.you{font-size:9px;font-weight:700;background:rgba(249,112,102,.12);color:var(--coral);
+  border-radius:6px;padding:1px 6px;border:1px solid rgba(249,112,102,.25)}
+.bw{display:flex;align-items:center;gap:6px;margin-top:4px}
+.bb{flex:1;height:4px;background:var(--bord);border-radius:4px;overflow:hidden}
+.bf{height:100%;border-radius:4px;transition:width .6s ease}
+.bp{font-size:11px;color:var(--mut);white-space:nowrap}
+.rc{font-size:12px;color:var(--mut);font-family:'JetBrains Mono',monospace;flex-shrink:0}
+.rnk{width:24px;text-align:center;font-size:16px;flex-shrink:0}
+
+/* LOG */
+.log-body{max-height:290px;overflow-y:auto;padding:2px 0;gap:0!important}
+.lr{display:flex;align-items:flex-start;gap:8px;padding:8px 0;
+  border-bottom:1px solid rgba(28,32,50,.5)}
+.lr:last-child{border:none}
+.lic{font-size:14px;flex-shrink:0;margin-top:1px}
+.lt{flex:1;font-size:12px;color:var(--dim);line-height:1.45}
+.ltime{font-size:11px;color:var(--mut);white-space:nowrap}
+
+/* TASKS */
+.tasks-hdr{flex-wrap:wrap;gap:8px}
+.tc{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sw{display:flex;align-items:center;gap:6px;background:var(--surf);
+  border:1px solid var(--bord);border-radius:10px;padding:6px 12px}
+.si{background:none;border:none;outline:none;color:var(--txt);
+  font-size:13px;width:150px;font-family:'Inter',sans-serif}
+.fsel{padding:6px 28px 6px 10px!important;font-size:12px!important;width:auto!important}
+.tr{display:flex;gap:14px;align-items:flex-start;padding:14px 18px;
+  border-bottom:1px solid var(--bord);transition:background .15s}
+.tr:last-child{border:none}
+.tr:hover{background:var(--surf)}
+.tm{flex:1;min-width:0}
+.tt{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:5px}
+.tn{font-weight:700;font-size:14px}
+.td{font-size:12px;color:var(--mut);line-height:1.4;margin-top:2px}
+.tme{display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap}
+.mc{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--dim)}
+.ta{display:flex;gap:6px;align-items:center;flex-shrink:0;flex-wrap:wrap}
+
+/* EDIT ROW */
+.eform{flex:1;display:flex;flex-direction:column;gap:8px}
+.ea{display:flex;gap:8px;margin-top:4px}
+
+/* STATUS / PRIORITY PILLS */
+.sp{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;
+  padding:3px 10px;border-radius:20px;border:1px solid;white-space:nowrap}
+.pt2{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;
+  border:1px solid;text-transform:uppercase;letter-spacing:.5px}
+
+/* LOCKED BADGE */
+.lb2{display:inline-flex;align-items:center;gap:5px;font-size:11px;
+  color:var(--amb);background:rgba(245,158,11,.08);
+  border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:4px 10px}
+
+/* BUTTONS */
+.bp2{background:linear-gradient(135deg,var(--ind),#9B8AFF);color:#fff;border:none;
+  border-radius:10px;padding:11px 18px;font-size:14px;font-weight:700;cursor:pointer;
+  transition:opacity .15s,transform .12s;width:100%;font-family:'Inter',sans-serif;letter-spacing:-.2px}
+.bp2:hover{opacity:.88;transform:translateY(-1px)}
+.bp2:active{transform:translateY(0)}
+.bp2:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.bs{display:inline-flex;align-items:center;gap:4px;border:1px solid;
+  border-radius:8px;padding:6px 13px;font-size:12px;font-weight:600;cursor:pointer;
+  transition:opacity .15s,transform .1s;white-space:nowrap;font-family:'Inter',sans-serif}
+.bs:hover{opacity:.8;transform:translateY(-1px)}
+.bs:active{transform:translateY(0)}
+.b-ok{background:rgba(52,211,153,.1);color:var(--mint);border-color:rgba(52,211,153,.25)}
+.b-go{background:rgba(245,158,11,.1);color:var(--amb);border-color:rgba(245,158,11,.25)}
+.b-gh{background:rgba(28,32,50,.6);color:var(--dim);border-color:var(--bord)}
+.b-dn{background:rgba(249,112,102,.1);color:var(--coral);border-color:rgba(249,112,102,.25)}
+.bi{background:none;border:none;color:var(--mut);cursor:pointer;padding:6px;
+  border-radius:8px;display:inline-flex;align-items:center;font-size:15px;
+  transition:background .15s,color .15s;line-height:1}
+.bi:hover{background:var(--bord);color:var(--txt)}
+.bi-del:hover{background:rgba(249,112,102,.12);color:var(--coral)}
+
+/* CONFETTI */
+.cp{position:fixed;width:8px;height:8px;border-radius:2px;
+  pointer-events:none;z-index:9999;animation:cfly .85s ease-out forwards}
+
+/* TOAST */
+.toast{position:fixed;bottom:28px;right:24px;background:var(--card);
+  border:1px solid var(--bord);border-radius:12px;padding:12px 20px;
+  font-size:13px;font-weight:600;z-index:9999;
+  box-shadow:0 10px 40px rgba(0,0,0,.5);animation:fadeUp .3s ease;max-width:320px}
+
+/* EMPTY */
+.empty{text-align:center;color:var(--mut);font-size:13px;padding:28px 0}
+
+/* ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes cfly{0%{opacity:1;transform:translate(0,0) rotate(0deg)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--rot))}}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.12);opacity:1}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="pg-login" class="page active">
+  <div class="login-card">
+    <div class="login-logo" style="animation:pulse 2.5s ease-in-out infinite">🛰️</div>
+    <h1 class="login-title">HackEye <em>Orbit</em></h1>
+    <p class="login-sub">Mission control for your team</p>
+
+    <div class="fg">
+      <label class="lbl">Your name</label>
+      <input id="ln" class="inp" placeholder="e.g. Soundar" autocomplete="off" oninput="onNameInput(this.value)" onkeydown="if(event.key==='Enter')onNameEnter()"/>
+      <div id="lbadge" class="lb2" style="display:none">🔒 <span id="lbadge-txt"></span></div>
+    </div>
+    <div id="pg-pass" class="fg" style="display:none">
+      <label class="lbl">Password</label>
+      <input id="lp" class="inp" type="password" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <div id="lerr" class="err" style="display:none"></div>
+    <button class="bp2" onclick="doLogin()">Sign in →</button>
+    <div class="login-hint">
+      <strong style="color:var(--dim)">Named accounts</strong><br>
+      👑 Soundar (Team Leader) &nbsp;·&nbsp; Sanjay &nbsp;·&nbsp; Yoganandhan &nbsp;·&nbsp; Raj Priyan<br>
+      <span style="color:var(--mut)">Others can join as guests</span>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="pg-app" class="page">
+
+  <nav class="nav">
+    <div class="nav-logo">🛰️ HackEye <em>Orbit</em></div>
+    <div class="nav-r">
+      <div id="nav-av" class="av" style="width:30px;height:30px;font-size:12px"></div>
+      <span id="nav-name" class="nav-name"></span>
+      <span id="nav-badge" class="badge"></span>
+      <button class="bi" onclick="signOut()" title="Sign out">⏻</button>
+    </div>
+  </nav>
+
+  <div class="stat-row" id="stat-row"></div>
+
+  <div class="wrap">
+
+    <!-- Leader grid: orbit | assign | roster -->
+    <div id="leader-grid" class="leader-grid" style="display:none">
+      <div class="panel orbit-outer">
+        <div class="ph"><div class="pt">🌍 <span>Team orbit</span></div><span class="ph-hint">drag to rotate</span></div>
+        <div class="orbit-wrap"><canvas id="oc"></canvas>
+          <div class="oleg">
+            <div class="oli"><div class="old" style="background:#7C6AFA"></div>To Do</div>
+            <div class="oli"><div class="old" style="background:#F59E0B"></div>In Progress</div>
+            <div class="oli"><div class="old" style="background:#34D399"></div>Done</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="ph"><div class="pt">🚀 Assign mission</div></div>
+        <div class="pb">
+          <div class="fg"><label class="lbl">Title *</label><input id="ft" class="inp" placeholder="Task title"/></div>
+          <div class="fg"><label class="lbl">Description</label><textarea id="fd" class="inp" rows="2" placeholder="Optional details…"></textarea></div>
+          <div class="fr">
+            <div class="fg"><label class="lbl">Assign to *</label>
+              <select id="fa" class="inp"><option value="">Choose member…</option></select>
+            </div>
+            <div class="fg"><label class="lbl">Priority</label>
+              <select id="fp" class="inp">
+                <option value="high">🔴 High</option>
+                <option value="medium" selected>🟡 Medium</option>
+                <option value="low">🟢 Low</option>
+              </select>
+            </div>
+          </div>
+          <div class="fg"><label class="lbl">Due date</label><input id="fdue" class="inp" type="date"/></div>
+          <div id="aerr" class="err" style="display:none"></div>
+          <button class="bp2" onclick="assignTask()">🚀 Launch mission</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="ph"><div class="pt">⭐ Team roster</div></div>
+        <div class="pb" id="roster-list"></div>
+      </div>
+    </div>
+
+    <!-- Member grid: just orbit -->
+    <div id="member-grid" class="member-grid" style="display:none">
+      <div class="panel orbit-outer">
+        <div class="ph"><div class="pt">🪐 <span>Your orbit</span></div><span class="ph-hint">drag to rotate</span></div>
+        <div class="orbit-wrap"><canvas id="oc-m"></canvas>
+          <div class="oleg">
+            <div class="oli"><div class="old" style="background:#7C6AFA"></div>To Do</div>
+            <div class="oli"><div class="old" style="background:#F59E0B"></div>In Progress</div>
+            <div class="oli"><div class="old" style="background:#34D399"></div>Done</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Secondary: leaderboard + log -->
+    <div class="sec-grid">
+      <div class="panel">
+        <div class="ph"><div class="pt">🏆 Leaderboard</div></div>
+        <div class="pb" id="lb-list"></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><div class="pt">📡 Mission log</div></div>
+        <div class="pb log-body" id="log-list"></div>
+      </div>
+    </div>
+
+    <!-- Tasks -->
+    <div class="panel">
+      <div class="ph tasks-hdr">
+        <div class="pt">📋 <span id="tasks-title">All missions</span></div>
+        <div class="tc">
+          <div class="sw">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5B6480" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input id="si" class="si" placeholder="Search…" oninput="renderTasks()"/>
+          </div>
+          <select id="fstt" class="inp fsel" onchange="renderTasks()">
+            <option value="all">All status</option>
+            <option value="todo">To Do</option>
+            <option value="in-progress">In Progress</option>
+            <option value="done">Done</option>
+          </select>
+        </div>
+      </div>
+      <div id="task-list"></div>
+    </div>
+
+  </div><!-- /wrap -->
+</div><!-- /pg-app -->
+
+<script>
+/* ════════════════════════════ DATA ════════════════════════════ */
+// All known team members — always available in dropdown even before they log in
+const TEAM = ['Soundar','Sanjay','Yoganandhan','Raj Priyan'];
+const ACCOUNTS = {
+  'soundar':     {role:'leader', pass:'hackeye'},
+  'sanjay':      {role:'member', pass:'sanjay2006'},
+  'yoganandhan': {role:'member', pass:'yoga2006'},
+  'raj priyan':  {role:'member', pass:'raj2007'},
+};
+const PAL = ['#7C6AFA','#F97066','#0EA5E9','#34D399','#F59E0B','#E879F9','#FB923C','#22D3EE'];
+const SM  = {todo:{l:'To Do',c:'#7C6AFA'},['in-progress']:{l:'In Progress',c:'#F59E0B'},done:{l:'Done',c:'#34D399'}};
+const PM  = {low:{l:'Low',c:'#4ADE80'},medium:{l:'Medium',c:'#F59E0B'},high:{l:'High',c:'#F97066'}};
+const LICO= {assigned:'🚀',completed:'✅',started:'⚡',deleted:'🗑️',joined:'⭐',edited:'✏️',reopened:'🔄'};
+
+let S  = {tasks:[],members:[],events:[]};  // shared state
+let me = null;  // {name, role}
+let editId = null;
+
+/* ────── helpers ────── */
+const N  = s=>(s||'').toLowerCase().trim();
+const uid= ()=>Math.random().toString(36).slice(2,9);
+function col(name){let h=0;for(let i=0;i<name.length;i++)h=name.charCodeAt(i)+((h<<5)-h);return PAL[Math.abs(h)%PAL.length]}
+function inits(name){return name.split(' ').map(w=>w[0]||'').slice(0,2).join('').toUpperCase()}
+function ago(ts){const s=Math.floor((Date.now()-ts)/1000);if(s<60)return 'just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago'}
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+const isL= ()=>me?.role==='leader';
+
+/* ────── storage ────── */
+function save(){try{localStorage.setItem('he-orbit4',JSON.stringify(S))}catch(e){}}
+function load(){
+  try{const d=localStorage.getItem('he-orbit4');if(d)S=JSON.parse(d)}catch(e){}
+  S.tasks=S.tasks||[];S.members=S.members||[];S.events=S.events||[];
+  // Always ensure all named team members are present
+  TEAM.forEach(m=>{if(!S.members.find(x=>N(x)===N(m)))S.members.push(m)});
+}
+function saveMe(){try{localStorage.setItem('he-me4',JSON.stringify(me))}catch(e){}}
+function loadMe(){try{const d=localStorage.getItem('he-me4');if(d)me=JSON.parse(d)}catch(e){}}
+function logEv(type,detail){S.events=[{id:uid(),type,actor:me?.name||'',detail,ts:Date.now()},...S.events].slice(0,150);save()}
+
+/* ════════════════════════════ LOGIN ════════════════════════════ */
+function onNameInput(v){
+  const acct=ACCOUNTS[N(v)];
+  const b=document.getElementById('lbadge'), pg=document.getElementById('pg-pass'), bt=document.getElementById('lbadge-txt');
+  document.getElementById('lerr').style.display='none';
+  if(acct){
+    bt.textContent=acct.role==='leader'?'👑 Team Leader account':'👤 Team Member account';
+    b.style.display='inline-flex'; pg.style.display='flex';
+  } else {
+    b.style.display='none'; pg.style.display='none';
+  }
+}
+function onNameEnter(){
+  const v=document.getElementById('ln').value;
+  if(ACCOUNTS[N(v)]) document.getElementById('lp').focus(); else doLogin();
+}
+function doLogin(){
+  const name=document.getElementById('ln').value.trim();
+  const pass=document.getElementById('lp').value;
+  const err=document.getElementById('lerr');
+  if(!name){err.innerHTML='⚠ Enter your name.';err.style.display='flex';return}
+  const acct=ACCOUNTS[N(name)];
+  if(acct){
+    if(pass!==acct.pass){err.innerHTML='⚠ Incorrect password.';err.style.display='flex';return}
+    me={name,role:acct.role};
+  } else {
+    me={name,role:'member'};
+  }
+  load();
+  if(!S.members.find(m=>N(m)===N(name))){S.members.push(name);logEv('joined',name+' joined the team');}
+  save(); saveMe(); bootApp();
+}
+function signOut(){
+  me=null; try{localStorage.removeItem('he-me4')}catch(e){}
+  document.getElementById('pg-app').classList.remove('active');
+  document.getElementById('pg-login').classList.add('active');
+  document.getElementById('ln').value='';
+  document.getElementById('lp').value='';
+  document.getElementById('pg-pass').style.display='none';
+  document.getElementById('lbadge').style.display='none';
+  document.getElementById('lerr').style.display='none';
+}
+
+/* ════════════════════════════ BOOT ════════════════════════════ */
+function bootApp(){
+  document.getElementById('pg-login').classList.remove('active');
+  document.getElementById('pg-app').classList.add('active');
+  // nav
+  const c=col(me.name);
+  const av=document.getElementById('nav-av');
+  av.textContent=inits(me.name); av.style.cssText=`width:30px;height:30px;font-size:12px;background:${c}22;color:${c};border:2px solid ${c}66`;
+  document.getElementById('nav-name').textContent=me.name;
+  const nb=document.getElementById('nav-badge');
+  nb.className='badge '+(isL()?'b-leader':'b-member');
+  nb.textContent=isL()?'👑 Team Leader':'Team Member';
+  // grids
+  document.getElementById('leader-grid').style.display=isL()?'':'none';
+  document.getElementById('member-grid').style.display=isL()?'none':'';
+  document.getElementById('tasks-title').textContent=isL()?'All missions':'My missions';
+  renderAll();
+  initOrbit();
+}
+
+/* ════════════════════════════ RENDER ════════════════════════════ */
+function renderAll(){renderStats();renderRoster();renderLB();renderLog();renderTasks();if(isL())fillDropdown()}
+
+function renderStats(){
+  const list=isL()?S.tasks:S.tasks.filter(t=>N(t.assignee)===N(me.name));
+  const tot=list.length,done=list.filter(t=>t.status==='done').length;
+  const ip=list.filter(t=>t.status==='in-progress').length,todo=list.filter(t=>t.status==='todo').length;
+  const cards=[
+    {ico:'📋',val:tot, c:'#7C6AFA',lbl:isL()?'Total tasks':'My tasks'},
+    {ico:'⏰',val:todo,c:'#8B93B0',lbl:'To do'},
+    {ico:'⚡',val:ip,  c:'#F59E0B',lbl:'In progress'},
+    {ico:'✅',val:done,c:'#34D399',lbl:'Completed'},
+  ];
+  if(isL()) cards.push({ico:'👥',val:S.members.length,c:'#F97066',lbl:'Members'});
+  document.getElementById('stat-row').innerHTML=cards.map(c=>`
+    <div class="sc"><div class="sc-ico">${c.ico}</div><div class="sc-val" style="color:${c.c}">${c.val}</div><div class="sc-lbl">${c.lbl}</div></div>`).join('');
+}
+
+function fillDropdown(){
+  const sel=document.getElementById('fa');
+  if(!sel) return;
+  const cur=sel.value;
+  // show everyone except the leader themselves (usually you assign to team members)
+  const opts=S.members.filter(m=>N(m)!==N(me.name));
+  sel.innerHTML='<option value="">Choose member…</option>'+
+    opts.map(m=>`<option value="${esc(m)}"${N(m)===N(cur)?' selected':''}>${esc(m)}</option>`).join('');
+}
+
+function renderRoster(){
+  if(!isL()) return;
+  const el=document.getElementById('roster-list');
+  el.innerHTML=S.members.map(m=>{
+    const mt=S.tasks.filter(t=>N(t.assignee)===N(m));
+    const done=mt.filter(t=>t.status==='done').length;
+    const pct=mt.length?Math.round(done/mt.length*100):0;
+    const c=col(m), you=N(m)===N(me.name);
+    return `<div class="rr">
+      <div class="av" style="width:34px;height:34px;font-size:13px;background:${c}22;color:${c};border:2px solid ${you?'#F97066':c+'55'}">${inits(m)}</div>
+      <div class="ri">
+        <div class="rn">${esc(m)}${you?'<span class="you">you</span>':''}</div>
+        <div class="bw"><div class="bb"><div class="bf" style="width:${pct}%;background:${c}"></div></div><span class="bp">${pct}%</span></div>
+      </div>
+      <div class="rc">${done}/${mt.length}</div>
+    </div>`;
+  }).join('')||'<p class="empty">No members yet.</p>';
+}
+
+function renderLB(){
+  const lb=[...S.members].map(m=>{
+    const mt=S.tasks.filter(t=>N(t.assignee)===N(m));
+    return{name:m,done:mt.filter(t=>t.status==='done').length,total:mt.length,ip:mt.filter(t=>t.status==='in-progress').length};
+  }).sort((a,b)=>b.done-a.done||b.ip-a.ip);
+  const el=document.getElementById('lb-list');
+  const medals=['🥇','🥈','🥉'];
+  el.innerHTML=lb.map((p,i)=>{
+    const c=col(p.name),pct=p.total?Math.round(p.done/p.total*100):0,you=N(p.name)===N(me.name);
+    return `<div class="rr">
+      <div class="rnk">${i<3?medals[i]:'#'+(i+1)}</div>
+      <div class="av" style="width:30px;height:30px;font-size:11px;background:${c}22;color:${c};border:2px solid ${you?'#F97066':c+'55'}">${inits(p.name)}</div>
+      <div class="ri">
+        <div class="rn">${esc(p.name)}${you?'<span class="you">you</span>':''}</div>
+        <div class="bw"><div class="bb"><div class="bf" style="width:${pct}%;background:${c}"></div></div><span class="bp">${p.done} done</span></div>
+      </div>
+    </div>`;
+  }).join('')||'<p class="empty">No data yet.</p>';
+}
+
+function renderLog(){
+  const el=document.getElementById('log-list');
+  el.innerHTML=S.events.slice(0,40).map(e=>`
+    <div class="lr"><div class="lic">${LICO[e.type]||'📌'}</div><div class="lt">${esc(e.detail)}</div><div class="ltime">${ago(e.ts)}</div></div>`
+  ).join('')||'<p class="empty">No activity yet.</p>';
+}
+
+function renderTasks(){
+  const q=(document.getElementById('si')?.value||'').toLowerCase();
+  const f=document.getElementById('fstt')?.value||'all';
+  const list=isL()?S.tasks:S.tasks.filter(t=>N(t.assignee)===N(me.name));
+  const vis=list
+    .filter(t=>f==='all'||t.status===f)
+    .filter(t=>!q||t.title.toLowerCase().includes(q)||(t.assignee||'').toLowerCase().includes(q));
+  const el=document.getElementById('task-list');
+  if(!vis.length){
+    el.innerHTML=`<p class="empty">${q?'No results for that search.':isL()?'No missions yet — assign one above.':'No missions assigned to you yet.'}</p>`;
+    return;
+  }
+  el.innerHTML=vis.map(t=>editId===t.id?editRow(t):taskRow(t)).join('');
+}
+
+function taskRow(t){
+  const sm=SM[t.status]||SM.todo, pm=PM[t.priority]||PM.medium;
+  const ac=col(t.assignee||'');
+  return `<div class="tr">
+    <div class="tm">
+      <div class="tt">
+        <span class="tn">${esc(t.title)}</span>
+        <span class="sp" style="background:${sm.c}18;color:${sm.c};border-color:${sm.c}44">${sm.l}</span>
+        <span class="pt2" style="color:${pm.c};border-color:${pm.c}44">${pm.l}</span>
+      </div>
+      ${t.desc?`<div class="td">${esc(t.desc)}</div>`:''}
+      <div class="tme">
+        ${isL()?`<span class="mc"><span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:${ac}22;color:${ac};font-size:8px;font-weight:800;border:1px solid ${ac}55;flex-shrink:0">${inits(t.assignee||'?')}</span> ${esc(t.assignee)}</span>`:''}
+        ${t.due?`<span class="mc">📅 ${t.due}</span>`:''}
+        <span class="mc" style="color:var(--mut);font-size:10px">${ago(t.createdAt)}</span>
+      </div>
+    </div>
+    <div class="ta">
+      ${!isL()&&t.status==='todo'   ?`<button class="bs b-go"  onclick="setStatus('${t.id}','in-progress')">⚡ Start</button>`:''}
+      ${!isL()&&t.status==='in-progress'?`<button class="bs b-ok" onclick="setStatus('${t.id}','done')">✅ Done</button>`:''}
+      ${!isL()&&t.status==='done'   ?`<button class="bs b-gh"  onclick="setStatus('${t.id}','todo')">🔄 Reopen</button>`:''}
+      ${isL()?`<select class="inp fsel" style="font-size:12px" onchange="setStatus('${t.id}',this.value)">
+        <option value="todo"${t.status==='todo'?' selected':''}>⏰ To Do</option>
+        <option value="in-progress"${t.status==='in-progress'?' selected':''}>⚡ In Progress</option>
+        <option value="done"${t.status==='done'?' selected':''}>✅ Done</option>
+      </select>`:''}
+      ${isL()?`<button class="bi" onclick="startEdit('${t.id}')" title="Edit">✏️</button>`:''}
+      ${isL()?`<button class="bi bi-del" onclick="delTask('${t.id}')" title="Delete">🗑️</button>`:''}
+    </div>
+  </div>`;
+}
+
+function editRow(t){
+  return `<div class="tr">
+    <div class="eform">
+      <input id="et-${t.id}" class="inp" value="${esc(t.title)}" placeholder="Title"/>
+      <textarea id="ed-${t.id}" class="inp" rows="2" placeholder="Description">${esc(t.desc||'')}</textarea>
+      <div class="fr">
+        <select id="ep-${t.id}" class="inp" style="flex:1">
+          <option value="high"${t.priority==='high'?' selected':''}>🔴 High</option>
+          <option value="medium"${t.priority==='medium'?' selected':''}>🟡 Medium</option>
+          <option value="low"${t.priority==='low'?' selected':''}>🟢 Low</option>
+        </select>
+        <input id="edu-${t.id}" class="inp" type="date" value="${t.due||''}" style="flex:1"/>
+        <select id="ea-${t.id}" class="inp" style="flex:1">
+          ${S.members.map(m=>`<option value="${esc(m)}"${N(m)===N(t.assignee)?' selected':''}>${esc(m)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="ea">
+        <button class="bs b-ok" onclick="saveEdit('${t.id}')">✅ Save</button>
+        <button class="bs b-gh" onclick="cancelEdit()">✕ Cancel</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ════════════════════════════ ACTIONS ════════════════════════════ */
+function assignTask(){
+  const title=document.getElementById('ft').value.trim();
+  const desc =document.getElementById('fd').value.trim();
+  const asgn =document.getElementById('fa').value;
+  const prio =document.getElementById('fp').value;
+  const due  =document.getElementById('fdue').value;
+  const err  =document.getElementById('aerr');
+  if(!title){err.innerHTML='⚠ Title is required.';err.style.display='flex';return}
+  if(!asgn) {err.innerHTML='⚠ Choose a team member to assign to.';err.style.display='flex';return}
+  err.style.display='none';
+  const task={id:uid(),title,desc,assignee:asgn,priority:prio,due,status:'todo',createdAt:Date.now()};
+  S.tasks.push(task);
+  logEv('assigned',`${me.name} assigned "${title}" to ${asgn}`);
+  save(); renderAll(); rebuildOrbit();
+  document.getElementById('ft').value='';
+  document.getElementById('fd').value='';
+  document.getElementById('fa').value='';
+  document.getElementById('fdue').value='';
+  toast('🚀 Mission launched for '+asgn+'!');
+}
+
+function setStatus(id,status){
+  const t=S.tasks.find(t=>t.id===id); if(!t) return;
+  t.status=status;
+  const v=status==='in-progress'?'started':status==='done'?'completed':'reopened';
+  logEv(v,`${me.name} ${v} "${t.title}"`);
+  save(); renderAll(); rebuildOrbit();
+  if(status==='done') confetti();
+}
+
+function delTask(id){
+  const t=S.tasks.find(t=>t.id===id); if(!t) return;
+  if(!confirm('Delete "'+t.title+'"?')) return;
+  S.tasks=S.tasks.filter(x=>x.id!==id);
+  logEv('deleted',`${me.name} deleted "${t.title}"`);
+  save(); renderAll(); rebuildOrbit();
+}
+
+function startEdit(id){editId=id;renderTasks()}
+function cancelEdit(){editId=null;renderTasks()}
+function saveEdit(id){
+  const t=S.tasks.find(t=>t.id===id); if(!t) return;
+  t.title   =document.getElementById('et-'+id).value.trim()||t.title;
+  t.desc    =document.getElementById('ed-'+id).value.trim();
+  t.priority=document.getElementById('ep-'+id).value;
+  t.due     =document.getElementById('edu-'+id).value;
+  t.assignee=document.getElementById('ea-'+id).value||t.assignee;
+  logEv('edited',`${me.name} edited "${t.title}"`);
+  editId=null; save(); renderAll(); rebuildOrbit();
+}
+
+/* ════════════════════════════ CONFETTI / TOAST ════════════════════════════ */
+function confetti(){
+  const cx=window.innerWidth/2, cy=window.innerHeight/3;
+  for(let i=0;i<24;i++){
+    const el=document.createElement('div'); el.className='cp';
+    const dx=(Math.random()-.5)*220, dy=-(Math.random()*150+60), rot=Math.random()*720;
+    el.style.cssText=`left:${cx}px;top:${cy}px;background:${PAL[i%PAL.length]};--dx:${dx}px;--dy:${dy}px;--rot:${rot}deg`;
+    document.body.appendChild(el); setTimeout(()=>el.remove(),900);
+  }
+  toast('🎉 Mission complete!');
+}
+function toast(msg){
+  const el=document.createElement('div'); el.className='toast'; el.textContent=msg;
+  document.body.appendChild(el); setTimeout(()=>el.remove(),2600);
+}
+
+/* ════════════════════════════ THREE.JS ════════════════════════════ */
+let R3,S3,C3,AF,SYST=[],rotY=0;
+
+function initOrbit(){
+  const cvs=document.getElementById(isL()?'oc':'oc-m');
+  if(!cvs) return;
+  const W=cvs.parentElement.clientWidth||700, H=320;
+  if(R3){R3.dispose();cancelAnimationFrame(AF)}
+  R3=new THREE.WebGLRenderer({canvas:cvs,antialias:true,alpha:true});
+  R3.setPixelRatio(Math.min(devicePixelRatio,2)); R3.setSize(W,H,false);
+  S3=new THREE.Scene(); C3=new THREE.PerspectiveCamera(52,W/H,.1,1000);
+  C3.position.set(0,11,22); C3.lookAt(0,0,0);
+  S3.add(new THREE.AmbientLight(0xffffff,.4));
+  const r=new THREE.DirectionalLight(0x7c6afa,1.5); r.position.set(-10,20,-10); S3.add(r);
+  const f=new THREE.DirectionalLight(0xf97066,.6); f.position.set(10,-5,10); S3.add(f);
+  // stars
+  const sp=new Float32Array(6000); for(let i=0;i<6000;i++) sp[i]=(Math.random()-.5)*300;
+  const sg=new THREE.BufferGeometry(); sg.setAttribute('position',new THREE.BufferAttribute(sp,3));
+  S3.add(new THREE.Points(sg,new THREE.PointsMaterial({color:0xffffff,size:.15,transparent:true,opacity:.45})));
+  buildSystems();
+  // drag
+  let drag=false,lx=0;
+  cvs.addEventListener('mousedown',e=>{drag=true;lx=e.clientX});
+  cvs.addEventListener('touchstart',e=>{drag=true;lx=e.touches[0].clientX},{passive:true});
+  window.addEventListener('mouseup',()=>drag=false);
+  window.addEventListener('touchend',()=>drag=false);
+  window.addEventListener('mousemove',e=>{if(drag){rotY+=(e.clientX-lx)*.006;lx=e.clientX}});
+  window.addEventListener('touchmove',e=>{if(drag){rotY+=(e.touches[0].clientX-lx)*.006;lx=e.touches[0].clientX}},{passive:true});
+  // loop
+  let t=0;
+  (function loop(){
+    AF=requestAnimationFrame(loop); t+=.016;
+    SYST.forEach(sys=>{
+      if(isL()&&SYST.length>1){
+        sys.planet.position.x=Math.cos(sys.a0+rotY)*8;
+        sys.planet.position.z=Math.sin(sys.a0+rotY)*8;
+        sys.cx=sys.planet.position.x; sys.cz=sys.planet.position.z;
+      }
+      sys.moons.forEach(m=>{
+        const a=t*m.spd+m.off;
+        m.mesh.position.x=sys.cx+Math.cos(a)*m.r;
+        m.mesh.position.z=sys.cz+Math.sin(a)*m.r;
+        m.mesh.position.y=Math.sin(a*1.6)*.25;
+      });
+    });
+    R3.render(S3,C3);
+  })();
+  window.addEventListener('resize',()=>{
+    const W2=cvs.parentElement.clientWidth||700;
+    C3.aspect=W2/320; C3.updateProjectionMatrix(); R3.setSize(W2,320,false);
+  });
+}
+
+function buildSystems(){
+  SYST=[]; S3.children.filter(c=>c.userData.sys).forEach(c=>S3.remove(c));
+  const nodes=isL()
+    ? S.members.map(m=>({name:m,color:col(m),tasks:S.tasks.filter(t=>N(t.assignee)===N(m)).slice(0,5).map(t=>({color:(SM[t.status]||SM.todo).c}))}))
+    : [{name:me.name,color:col(me.name),tasks:S.tasks.filter(t=>N(t.assignee)===N(me.name)).slice(0,6).map(t=>({color:(SM[t.status]||SM.todo).c}))}];
+  const focus=!isL(), R=8;
+  nodes.forEach((node,ni)=>{
+    const a0=(ni/Math.max(nodes.length,1))*Math.PI*2;
+    const cx=focus?0:Math.cos(a0)*R, cz=focus?0:Math.sin(a0)*R;
+    const c=new THREE.Color(node.color);
+    const ps=focus?1.8:.9, ts=focus?2.6:1.4;
+    const planet=new THREE.Mesh(new THREE.SphereGeometry(ps,32,32),new THREE.MeshPhongMaterial({color:c,emissive:c,emissiveIntensity:.28,shininess:90}));
+    planet.position.set(cx,0,cz); planet.userData.sys=true; S3.add(planet);
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(ts,.012,4,80),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:.15}));
+    ring.rotation.x=Math.PI/2; ring.position.set(cx,0,cz); ring.userData.sys=true; S3.add(ring);
+    const moons=[];
+    node.tasks.forEach((task,ti)=>{
+      const tc=new THREE.Color(task.color);
+      const mr=focus?.28:.22, or=focus?(3.2+ti*1.4):(1.6+ti*.55);
+      const moon=new THREE.Mesh(new THREE.SphereGeometry(mr,14,14),new THREE.MeshPhongMaterial({color:tc,emissive:tc,emissiveIntensity:.5,shininess:60}));
+      moon.userData.sys=true; S3.add(moon);
+      if(focus){
+        const og=new THREE.Mesh(new THREE.TorusGeometry(or,.008,4,80),new THREE.MeshBasicMaterial({color:tc,transparent:true,opacity:.1}));
+        og.rotation.x=Math.PI/2; og.position.set(cx,0,cz); og.userData.sys=true; S3.add(og);
+      }
+      moons.push({mesh:moon,r:or,spd:.38+ti*.11,off:(ti/Math.max(node.tasks.length,1))*Math.PI*2,cx,cz});
+    });
+    SYST.push({planet,cx,cz,moons,a0});
+  });
+}
+function rebuildOrbit(){buildSystems()}
+
+/* ════════════════════════════ INIT ════════════════════════════ */
+window.addEventListener('DOMContentLoaded',()=>{
+  load(); loadMe();
+  if(me){
+    const acct=ACCOUNTS[N(me.name)];
+    if(acct&&me.role!==acct.role){me=null;saveMe();return}
+    bootApp();
+  }
+});
+</script>
+</body>
+</html>
