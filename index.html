@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>HackEye Orbit — Mission Control</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<!-- ✅ Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -14,7 +16,6 @@ html,body{background:var(--bg);color:var(--txt);font-family:'Inter',sans-serif;m
 ::-webkit-scrollbar-thumb{background:var(--bord);border-radius:4px}
 .page{display:none}
 .page.active{display:flex;flex-direction:column;min-height:100vh}
-/* LOGIN */
 #pg-login{align-items:center;justify-content:center;background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(124,106,250,.18) 0%,transparent 60%)}
 .login-card{background:var(--card);border:1px solid var(--bord);border-radius:22px;padding:44px 40px;width:100%;max-width:440px;display:flex;flex-direction:column;gap:22px;box-shadow:0 32px 80px rgba(0,0,0,.7);animation:fadeUp .4s ease both}
 .login-logo{text-align:center;font-size:40px;line-height:1;margin-bottom:-4px}
@@ -22,7 +23,6 @@ html,body{background:var(--bg);color:var(--txt);font-family:'Inter',sans-serif;m
 .login-title em{color:var(--ind);font-style:normal}
 .login-sub{font-size:13px;color:var(--mut);text-align:center;margin-top:-10px}
 .login-hint{font-size:11px;color:var(--mut);text-align:center;line-height:1.6;border:1px solid var(--bord);border-radius:10px;padding:10px 14px;background:var(--surf)}
-/* NAV */
 .nav{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--bord);position:sticky;top:0;background:rgba(7,8,12,.85);backdrop-filter:blur(12px);z-index:100}
 .nav-logo{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:900;letter-spacing:-.4px}
 .nav-logo em{color:var(--ind);font-style:normal}
@@ -31,28 +31,24 @@ html,body{background:var(--bg);color:var(--txt);font-family:'Inter',sans-serif;m
 .badge{display:inline-flex;align-items:center;gap:5px;border-radius:20px;font-size:11px;font-weight:700;padding:3px 12px;border:1px solid}
 .b-leader{background:rgba(245,158,11,.1);color:var(--amb);border-color:rgba(245,158,11,.25)}
 .b-member{background:rgba(124,106,250,.1);color:var(--ind);border-color:rgba(124,106,250,.25)}
-/* STATS */
 .stat-row{display:flex;gap:10px;padding:18px 20px 6px;flex-wrap:wrap}
 .sc{flex:1;min-width:80px;background:var(--card);border:1px solid var(--bord);border-radius:14px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:4px;transition:border-color .2s,transform .15s;cursor:default}
 .sc:hover{border-color:rgba(124,106,250,.35);transform:translateY(-2px)}
 .sc-ico{font-size:18px;line-height:1}
 .sc-val{font-size:26px;font-weight:900;font-family:'JetBrains Mono',monospace;line-height:1.1}
 .sc-lbl{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.7px;white-space:nowrap;text-align:center}
-/* LAYOUT */
 .wrap{max-width:1320px;margin:0 auto;width:100%;padding:0 20px 60px}
 .leader-grid{display:grid;grid-template-columns:1fr 310px 255px;gap:14px;margin:14px 0}
 .member-grid{display:grid;grid-template-columns:1fr;gap:14px;margin:14px 0}
 .sec-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
 @media(max-width:1080px){.leader-grid{grid-template-columns:1fr 290px}}
 @media(max-width:760px){.leader-grid,.sec-grid{grid-template-columns:1fr}}
-/* PANEL */
 .panel{background:var(--card);border:1px solid var(--bord);border-radius:16px;overflow:hidden;transition:border-color .2s;animation:fadeUp .35s ease both}
 .panel:hover{border-color:rgba(124,106,250,.2)}
 .ph{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid var(--bord);background:var(--surf)}
 .pt{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700}
 .ph-hint{font-size:11px;color:var(--mut)}
 .pb{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
-/* ORBIT */
 .orbit-outer{min-height:370px}
 .orbit-wrap{position:relative;height:320px;background:linear-gradient(180deg,rgba(124,106,250,.05) 0%,transparent 100%)}
 #oc{width:100%;height:100%;display:block;cursor:grab}
@@ -62,7 +58,6 @@ html,body{background:var(--bg);color:var(--txt);font-family:'Inter',sans-serif;m
 .oleg{position:absolute;bottom:12px;left:14px;display:flex;gap:12px;flex-wrap:wrap}
 .oli{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--dim)}
 .old{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-/* FIELDS */
 .fg{display:flex;flex-direction:column;gap:5px}
 .fr{display:flex;gap:10px}
 .fr .fg{flex:1}
@@ -71,7 +66,6 @@ html,body{background:var(--bg);color:var(--txt);font-family:'Inter',sans-serif;m
 .inp:focus{border-color:var(--ind);box-shadow:0 0 0 3px rgba(124,106,250,.18)}
 select.inp{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%235B6480' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;cursor:pointer}
 .err{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--coral);padding:8px 12px;background:rgba(249,112,102,.07);border-radius:8px;border:1px solid rgba(249,112,102,.18)}
-/* ROSTER / LEADERBOARD */
 .rr{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(28,32,50,.7)}
 .rr:last-child{border:none}
 .av{display:flex;align-items:center;justify-content:center;border-radius:50%;font-weight:800;flex-shrink:0;line-height:1}
@@ -84,14 +78,12 @@ select.inp{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.
 .bp{font-size:11px;color:var(--mut);white-space:nowrap}
 .rc{font-size:12px;color:var(--mut);font-family:'JetBrains Mono',monospace;flex-shrink:0}
 .rnk{width:24px;text-align:center;font-size:16px;flex-shrink:0}
-/* LOG */
 .log-body{max-height:290px;overflow-y:auto;padding:2px 0;gap:0!important}
 .lr{display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid rgba(28,32,50,.5)}
 .lr:last-child{border:none}
 .lic{font-size:14px;flex-shrink:0;margin-top:1px}
 .lt{flex:1;font-size:12px;color:var(--dim);line-height:1.45}
 .ltime{font-size:11px;color:var(--mut);white-space:nowrap}
-/* TASKS */
 .tasks-hdr{flex-wrap:wrap;gap:8px}
 .tc{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .sw{display:flex;align-items:center;gap:6px;background:var(--surf);border:1px solid var(--bord);border-radius:10px;padding:6px 12px}
@@ -109,11 +101,9 @@ select.inp{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.
 .ta{display:flex;gap:6px;align-items:center;flex-shrink:0;flex-wrap:wrap}
 .eform{flex:1;display:flex;flex-direction:column;gap:8px}
 .ea{display:flex;gap:8px;margin-top:4px}
-/* STATUS / PRIORITY */
 .sp{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;border:1px solid;white-space:nowrap}
 .pt2{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;border:1px solid;text-transform:uppercase;letter-spacing:.5px}
 .lb2{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--amb);background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:4px 10px}
-/* BUTTONS */
 .bp2{background:linear-gradient(135deg,var(--ind),#9B8AFF);color:#fff;border:none;border-radius:10px;padding:11px 18px;font-size:14px;font-weight:700;cursor:pointer;transition:opacity .15s,transform .12s;width:100%;font-family:'Inter',sans-serif;letter-spacing:-.2px}
 .bp2:hover{opacity:.88;transform:translateY(-1px)}
 .bp2:active{transform:translateY(0)}
@@ -129,14 +119,10 @@ select.inp{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.
 .bi{background:none;border:none;color:var(--mut);cursor:pointer;padding:6px;border-radius:8px;display:inline-flex;align-items:center;font-size:15px;transition:background .15s,color .15s;line-height:1}
 .bi:hover{background:var(--bord);color:var(--txt)}
 .bi-del:hover{background:rgba(249,112,102,.12);color:var(--coral)}
-/* CONFETTI */
 .cp{position:fixed;width:8px;height:8px;border-radius:2px;pointer-events:none;z-index:9999;animation:cfly .85s ease-out forwards}
-/* TOAST */
 .toast{position:fixed;bottom:28px;right:24px;background:var(--card);border:1px solid var(--bord);border-radius:12px;padding:12px 20px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 10px 40px rgba(0,0,0,.5);animation:fadeUp .3s ease;max-width:320px}
-/* EMPTY */
 .empty{text-align:center;color:var(--mut);font-size:13px;padding:28px 0}
-
-/* ── VISITOR TRACKING PANEL ── */
+.loading{text-align:center;color:var(--mut);font-size:13px;padding:28px 0;opacity:.6}
 #pg-visitors{display:none;flex-direction:column;min-height:100vh}
 #pg-visitors.active{display:flex}
 .vt-nav{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--bord);background:rgba(7,8,12,.85);backdrop-filter:blur(12px);position:sticky;top:0;z-index:100}
@@ -172,8 +158,6 @@ select.inp{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.
 .sess-block{position:absolute;height:100%;border-radius:3px;display:flex;align-items:center;padding:0 5px;font-size:9px;font-weight:700;cursor:pointer;overflow:hidden;white-space:nowrap;opacity:.9;transition:opacity .15s}
 .sess-block:hover{opacity:1}
 .vt-empty{text-align:center;padding:40px;color:var(--mut);font-size:13px}
-
-/* ANIMATIONS */
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 @keyframes cfly{0%{opacity:1;transform:translate(0,0) rotate(0deg)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--rot))}}
 @keyframes pulse{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.12);opacity:1}}
@@ -197,7 +181,7 @@ select.inp{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.
       <input id="lp" class="inp" type="password" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()"/>
     </div>
     <div id="lerr" class="err" style="display:none"></div>
-    <button class="bp2" onclick="doLogin()">Sign in →</button>
+    <button class="bp2" id="login-btn" onclick="doLogin()">Sign in →</button>
     <div class="login-hint">
       <strong style="color:var(--dim)">Named accounts</strong><br>
       👑 Soundar (Team Leader) &nbsp;·&nbsp; Sanjay &nbsp;·&nbsp; Yoganandhan &nbsp;·&nbsp; Raj Priyan<br>
@@ -214,7 +198,6 @@ select.inp{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.
       <div id="nav-av" class="av" style="width:30px;height:30px;font-size:12px"></div>
       <span id="nav-name" class="nav-name"></span>
       <span id="nav-badge" class="badge"></span>
-      <!-- Visitor tracking button — only visible to Soundar -->
       <button id="btn-visitors" class="bs b-vi" onclick="openVisitors()" style="display:none">👁 Visitor Log</button>
       <button class="bi" onclick="signOut()" title="Sign out">⏻</button>
     </div>
@@ -302,12 +285,12 @@ select.inp{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.
           </select>
         </div>
       </div>
-      <div id="task-list"></div>
+      <div id="task-list"><p class="loading">Loading missions…</p></div>
     </div>
   </div>
 </div>
 
-<!-- VISITOR TRACKING PAGE (Soundar only) -->
+<!-- VISITOR TRACKING PAGE -->
 <div id="pg-visitors">
   <nav class="vt-nav">
     <div class="nav-logo">👁 Visitor Log &nbsp;<span style="font-size:12px;color:var(--mut);font-weight:400">— Admin view</span></div>
@@ -323,34 +306,23 @@ select.inp{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.
       <button class="vt-tab" onclick="vtTab('timeline',this)">Timeline</button>
       <button class="vt-tab" onclick="vtTab('history',this)">Full history</button>
     </div>
-
-    <!-- TODAY TAB -->
     <div id="vt-today">
       <div class="panel">
         <div class="ph"><div class="pt">📅 Who visited today</div><span class="ph-hint" id="vt-today-date"></span></div>
         <div style="overflow-x:auto">
           <table class="vtbl">
-            <thead><tr>
-              <th>Member</th><th>Last seen</th><th>Sessions</th><th>Time spent</th><th>Status</th>
-            </tr></thead>
+            <thead><tr><th>Member</th><th>Last seen</th><th>Sessions</th><th>Time spent</th><th>Status</th></tr></thead>
             <tbody id="vt-today-body"></tbody>
           </table>
         </div>
       </div>
     </div>
-
-    <!-- TIMELINE TAB -->
     <div id="vt-timeline" style="display:none">
       <div class="panel">
-        <div class="ph">
-          <div class="pt">⏱ Session timeline — today</div>
-          <span class="ph-hint">8am – 10pm</span>
-        </div>
+        <div class="ph"><div class="pt">⏱ Session timeline — today</div><span class="ph-hint">8am – 10pm</span></div>
         <div id="vt-tl-wrap" style="padding:14px 0"></div>
       </div>
     </div>
-
-    <!-- HISTORY TAB -->
     <div id="vt-history" style="display:none">
       <div class="panel">
         <div class="ph tasks-hdr">
@@ -364,9 +336,7 @@ select.inp{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.
         </div>
         <div style="overflow-x:auto">
           <table class="vtbl">
-            <thead><tr>
-              <th>Member</th><th>Date</th><th>Signed in</th><th>Signed out</th><th>Duration</th><th>Task updated?</th>
-            </tr></thead>
+            <thead><tr><th>Member</th><th>Date</th><th>Signed in</th><th>Signed out</th><th>Duration</th><th>Task updated?</th></tr></thead>
             <tbody id="vt-hist-body"></tbody>
           </table>
         </div>
@@ -377,7 +347,15 @@ select.inp{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.
 
 <script>
 /* ══════════════════════════════════════════════════════
-   DATA & CONSTANTS
+   ✅ SUPABASE SETUP
+══════════════════════════════════════════════════════ */
+const SUPABASE_URL  = 'https://msbibwersmwcvfhxdtjt.supabase.co';
+const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zYmlid2Vyc213Y3ZmaHhkdGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3MzIwODcsImV4cCI6MjA5ODMwODA4N30.JEYsp8atEc7aZ7IQLK8zLzNPYcOnzDJt-w7YpNpydpQ';
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* ══════════════════════════════════════════════════════
+   CONSTANTS
 ══════════════════════════════════════════════════════ */
 const TEAM    = ['Soundar','Sanjay','Yoganandhan','Raj Priyan'];
 const ACCOUNTS= {
@@ -390,7 +368,6 @@ const PAL=['#7C6AFA','#F97066','#0EA5E9','#34D399','#F59E0B','#E879F9','#FB923C'
 const SM ={todo:{l:'To Do',c:'#7C6AFA'},['in-progress']:{l:'In Progress',c:'#F59E0B'},done:{l:'Done',c:'#34D399'}};
 const PM ={low:{l:'Low',c:'#4ADE80'},medium:{l:'Medium',c:'#F59E0B'},high:{l:'High',c:'#F97066'}};
 const LICO={assigned:'🚀',completed:'✅',started:'⚡',deleted:'🗑️',joined:'⭐',edited:'✏️',reopened:'🔄'};
-
 const MEMBER_COLORS={
   'Soundar'    :{c:'#7C6AFA',bg:'rgba(124,106,250,.18)'},
   'Sanjay'     :{c:'#34D399',bg:'rgba(52,211,153,.15)'},
@@ -398,14 +375,17 @@ const MEMBER_COLORS={
   'Raj Priyan' :{c:'#0EA5E9',bg:'rgba(14,165,233,.15)'},
 };
 
-let S  = {tasks:[],members:[],events:[]};
+/* ══════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════ */
+let S  = {tasks:[], members:[...TEAM], events:[]};
 let me = null;
 let editId = null;
 
-/* ── Visitor tracking state ── */
-let VT_SESSION_START = null;  // timestamp when current user signed in
-let VT_HEARTBEAT     = null;  // interval id
-const VT_KEY         = 'he-visit-log4';
+/* Visitor tracking */
+let VT_SESSION_ID    = null;
+let VT_SESSION_START = null;
+let VT_HEARTBEAT     = null;
 
 /* ══════════════════════════════════════════════════════
    HELPERS
@@ -424,90 +404,179 @@ function todayStr(){return new Date().toISOString().slice(0,10)}
 function getMC(name){return MEMBER_COLORS[name]||{c:col(name),bg:col(name)+'22'}}
 
 /* ══════════════════════════════════════════════════════
-   MAIN APP STORAGE
+   ✅ SUPABASE — LOAD DATA
 ══════════════════════════════════════════════════════ */
-function save(){try{localStorage.setItem('he-orbit4',JSON.stringify(S))}catch(e){}}
-function load(){
-  try{const d=localStorage.getItem('he-orbit4');if(d)S=JSON.parse(d)}catch(e){}
-  S.tasks=S.tasks||[];S.members=S.members||[];S.events=S.events||[];
-  TEAM.forEach(m=>{if(!S.members.find(x=>N(x)===N(m)))S.members.push(m)});
+async function loadFromDB(){
+  try {
+    // Load tasks
+    const {data:tasks, error:te} = await db.from('tasks').select('*').order('created_at', {ascending:false});
+    if(te) throw te;
+    S.tasks = (tasks||[]).map(t=>({
+      id:       t.id?.toString(),
+      title:    t.title,
+      desc:     t.description,
+      assignee: t.assigned_to,
+      priority: t.priority||'medium',
+      due:      t.due_date||'',
+      status:   t.status||'todo',
+      createdAt:new Date(t.created_at).getTime(),
+    }));
+
+    // Load events
+    const {data:events, error:ee} = await db.from('events').select('*').order('created_at',{ascending:false}).limit(150);
+    if(!ee && events) {
+      S.events = events.map(e=>({
+        id:     e.id?.toString(),
+        type:   e.type,
+        actor:  e.actor,
+        detail: e.detail,
+        ts:     new Date(e.created_at).getTime(),
+      }));
+    }
+
+    // Load members
+    const {data:members, error:me2} = await db.from('members').select('name');
+    if(!me2 && members && members.length>0){
+      const dbNames = members.map(m=>m.name);
+      // Merge TEAM defaults with any extras from DB
+      const merged = [...new Set([...TEAM,...dbNames])];
+      S.members = merged;
+    } else {
+      S.members = [...TEAM];
+    }
+  } catch(err){
+    console.warn('DB load error, using defaults:', err);
+    S.tasks=[];S.events=[];S.members=[...TEAM];
+  }
 }
-function saveMe(){try{localStorage.setItem('he-me4',JSON.stringify(me))}catch(e){}}
-function loadMe(){try{const d=localStorage.getItem('he-me4');if(d)me=JSON.parse(d)}catch(e){}}
-function logEv(type,detail){S.events=[{id:uid(),type,actor:me?.name||'',detail,ts:Date.now()},...S.events].slice(0,150);save()}
 
 /* ══════════════════════════════════════════════════════
-   VISITOR TRACKING — STORAGE
+   ✅ SUPABASE — SAVE TASK
 ══════════════════════════════════════════════════════ */
-function vtLoad(){
-  try{const d=localStorage.getItem(VT_KEY);return d?JSON.parse(d):[]}catch(e){return []}
-}
-function vtSave(logs){
-  try{localStorage.setItem(VT_KEY,JSON.stringify(logs))}catch(e){}
-}
-
-/* Called on login — starts a new visit session for this member */
-function vtStartSession(){
-  if(!me||N(me.name)==='soundar') return; // don't track Soundar himself
-  VT_SESSION_START=Date.now();
-  const taskCountAtStart=S.tasks.filter(t=>N(t.assignee)===N(me.name)).length;
-
-  // write a pending record (end=null means still active)
-  const logs=vtLoad();
-  const entry={
-    id:uid(),
-    member:me.name,
-    date:todayStr(),
-    start:VT_SESSION_START,
-    end:null,
-    duration:0,
-    taskCountAtStart,
-    taskUpdated:false,
-  };
-  logs.push(entry);
-  vtSave(logs);
-
-  // heartbeat: update the record every 30s so we don't lose data on crash/close
-  VT_HEARTBEAT=setInterval(()=>vtHeartbeat(entry.id),30000);
-
-  // save end time when user navigates away
-  window.addEventListener('beforeunload',()=>vtEndSession(entry.id));
-  window.addEventListener('visibilitychange',()=>{if(document.hidden)vtEndSession(entry.id)});
+async function dbInsertTask(task){
+  const {data, error} = await db.from('tasks').insert([{
+    title:       task.title,
+    description: task.desc,
+    assigned_to: task.assignee,
+    priority:    task.priority,
+    status:      task.status,
+    due_date:    task.due||null,
+  }]).select().single();
+  if(error){console.error('Insert task error:',error);return null;}
+  return data;
 }
 
-/* Heartbeat — keep the active record fresh */
-function vtHeartbeat(id){
-  const logs=vtLoad();
-  const e=logs.find(x=>x.id===id); if(!e)return;
-  e.end=Date.now();
-  e.duration=e.end-e.start;
-  e.taskUpdated=didUpdateTasks(e);
-  vtSave(logs);
+async function dbUpdateTaskStatus(taskId, status){
+  const {error} = await db.from('tasks').update({status}).eq('id', parseInt(taskId)||taskId);
+  if(error) console.error('Update status error:',error);
 }
 
-/* Called on sign-out or page hide */
-function vtEndSession(id){
+async function dbUpdateTask(taskId, fields){
+  const {error} = await db.from('tasks').update({
+    title:       fields.title,
+    description: fields.desc,
+    priority:    fields.priority,
+    due_date:    fields.due||null,
+    assigned_to: fields.assignee,
+  }).eq('id', parseInt(taskId)||taskId);
+  if(error) console.error('Update task error:',error);
+}
+
+async function dbDeleteTask(taskId){
+  const {error} = await db.from('tasks').delete().eq('id', parseInt(taskId)||taskId);
+  if(error) console.error('Delete task error:',error);
+}
+
+async function dbLogEvent(type, detail){
+  const {error} = await db.from('events').insert([{
+    type, actor: me?.name||'', detail
+  }]);
+  if(error) console.error('Log event error:',error);
+}
+
+async function dbEnsureMember(name){
+  const {error} = await db.from('members').upsert([{name}],{onConflict:'name',ignoreDuplicates:true});
+  if(error) console.error('Upsert member error:',error);
+}
+
+/* ══════════════════════════════════════════════════════
+   ✅ SUPABASE — VISITOR TRACKING
+══════════════════════════════════════════════════════ */
+async function vtStartSession(){
+  if(!me || N(me.name)==='soundar') return;
+  VT_SESSION_START = Date.now();
+
+  const {data, error} = await db.from('visits').insert([{
+    member:   me.name,
+    date:     todayStr(),
+    start_ts: new Date(VT_SESSION_START).toISOString(),
+    end_ts:   null,
+    duration_ms: 0,
+    task_updated: false,
+  }]).select().single();
+
+  if(!error && data){
+    VT_SESSION_ID = data.id;
+    VT_HEARTBEAT = setInterval(()=>vtHeartbeat(), 30000);
+  }
+  window.addEventListener('beforeunload', vtEndSession);
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)vtEndSession()});
+}
+
+async function vtHeartbeat(){
+  if(!VT_SESSION_ID) return;
+  const dur = Date.now() - VT_SESSION_START;
+  await db.from('visits').update({
+    end_ts:      new Date().toISOString(),
+    duration_ms: dur,
+    task_updated: didUpdateTasksVT(),
+  }).eq('id', VT_SESSION_ID);
+}
+
+async function vtEndSession(){
   clearInterval(VT_HEARTBEAT);
-  if(!id)return;
-  const logs=vtLoad();
-  const e=logs.find(x=>x.id===id); if(!e)return;
-  e.end=Date.now();
-  e.duration=e.end-e.start;
-  e.taskUpdated=didUpdateTasks(e);
-  vtSave(logs);
+  if(!VT_SESSION_ID) return;
+  const dur = Date.now() - VT_SESSION_START;
+  await db.from('visits').update({
+    end_ts:      new Date().toISOString(),
+    duration_ms: dur,
+    task_updated: didUpdateTasksVT(),
+  }).eq('id', VT_SESSION_ID);
+  VT_SESSION_ID = null;
 }
 
-/* Check if the member updated any tasks during this session */
-function didUpdateTasks(entry){
-  const currentCount=S.tasks.filter(t=>N(t.assignee)===N(me?.name||'')).length;
-  const doneCount=S.tasks.filter(t=>N(t.assignee)===N(me?.name||'')&&t.status==='done').length;
-  // also check mission log for edits/completions by this member during the session window
-  const activity=S.events.filter(ev=>
-    N(ev.actor)===N(me?.name||'')&&
-    ev.ts>=entry.start&&
+function didUpdateTasksVT(){
+  const activity = S.events.filter(ev=>
+    N(ev.actor)===N(me?.name||'') &&
+    ev.ts >= VT_SESSION_START &&
     ['completed','started','edited','reopened'].includes(ev.type)
   );
-  return activity.length>0||currentCount!==entry.taskCountAtStart;
+  return activity.length > 0;
+}
+
+async function vtLoadVisits(){
+  const {data, error} = await db.from('visits').select('*').order('start_ts',{ascending:false});
+  if(error){console.error('Visit load error:',error);return [];}
+  return (data||[]).map(v=>({
+    id:          v.id,
+    member:      v.member,
+    date:        v.date,
+    start:       new Date(v.start_ts).getTime(),
+    end:         v.end_ts ? new Date(v.end_ts).getTime() : null,
+    duration:    v.duration_ms||0,
+    taskUpdated: v.task_updated||false,
+  }));
+}
+
+/* ══════════════════════════════════════════════════════
+   LOCAL SESSION (me)
+══════════════════════════════════════════════════════ */
+function saveMe(){try{localStorage.setItem('he-me4',JSON.stringify(me))}catch(e){}}
+function loadMe(){try{const d=localStorage.getItem('he-me4');if(d)me=JSON.parse(d)}catch(e){}}
+
+function logEv(type,detail){
+  S.events=[{id:uid(),type,actor:me?.name||'',detail,ts:Date.now()},...S.events].slice(0,150);
+  dbLogEvent(type,detail); // async fire-and-forget
 }
 
 /* ══════════════════════════════════════════════════════
@@ -526,10 +595,12 @@ function onNameEnter(){
   const v=document.getElementById('ln').value;
   if(ACCOUNTS[N(v)])document.getElementById('lp').focus();else doLogin();
 }
-function doLogin(){
+
+async function doLogin(){
   const name=document.getElementById('ln').value.trim();
   const pass=document.getElementById('lp').value;
   const err =document.getElementById('lerr');
+  const btn =document.getElementById('login-btn');
   if(!name){err.innerHTML='⚠ Enter your name.';err.style.display='flex';return}
   const acct=ACCOUNTS[N(name)];
   if(acct){
@@ -538,22 +609,33 @@ function doLogin(){
   } else {
     me={name,role:'member'};
   }
-  load();
-  if(!S.members.find(m=>N(m)===N(name))){S.members.push(name);logEv('joined',name+' joined the team');}
-  save();saveMe();
-  vtStartSession(); // ← START TRACKING
-  bootApp();
-}
-function signOut(){
-  // end the session before leaving
-  const logs=vtLoad();
-  const active=logs.find(x=>x.member===me?.name&&x.end===null);
-  if(active)vtEndSession(active.id);
+  btn.disabled=true; btn.textContent='Loading…';
+  err.style.display='none';
 
-  me=null;try{localStorage.removeItem('he-me4')}catch(e){}
+  // Load data from Supabase
+  await loadFromDB();
+
+  // Ensure member exists in DB
+  if(!S.members.find(m=>N(m)===N(name))){
+    S.members.push(name);
+    logEv('joined', name+' joined the team');
+  }
+  await dbEnsureMember(name);
+
+  saveMe();
+  await vtStartSession();
+  bootApp();
+  btn.disabled=false; btn.textContent='Sign in →';
+}
+
+async function signOut(){
+  await vtEndSession();
+  me=null;
+  try{localStorage.removeItem('he-me4')}catch(e){}
   ['pg-app','pg-visitors'].forEach(id=>{
-    document.getElementById(id).classList.remove('active');
-    if(id==='pg-visitors')document.getElementById(id).style.display='none';
+    const el=document.getElementById(id);
+    el.classList.remove('active');
+    if(id==='pg-visitors') el.style.display='none';
   });
   document.getElementById('pg-login').classList.add('active');
   document.getElementById('ln').value='';
@@ -561,6 +643,7 @@ function signOut(){
   document.getElementById('pg-pass').style.display='none';
   document.getElementById('lbadge').style.display='none';
   document.getElementById('lerr').style.display='none';
+  S={tasks:[],members:[...TEAM],events:[]};
 }
 
 /* ══════════════════════════════════════════════════════
@@ -569,27 +652,38 @@ function signOut(){
 function bootApp(){
   document.getElementById('pg-login').classList.remove('active');
   document.getElementById('pg-app').classList.add('active');
-
   const c=col(me.name);
   const av=document.getElementById('nav-av');
-  av.textContent=inits(me.name);av.style.cssText=`width:30px;height:30px;font-size:12px;background:${c}22;color:${c};border:2px solid ${c}66`;
+  av.textContent=inits(me.name);
+  av.style.cssText=`width:30px;height:30px;font-size:12px;background:${c}22;color:${c};border:2px solid ${c}66`;
   document.getElementById('nav-name').textContent=me.name;
   const nb=document.getElementById('nav-badge');
   nb.className='badge '+(isL()?'b-leader':'b-member');
   nb.textContent=isL()?'👑 Team Leader':'Team Member';
-
-  // show visitor log button only for Soundar
   document.getElementById('btn-visitors').style.display=isL()?'inline-flex':'none';
-
   document.getElementById('leader-grid').style.display=isL()?'':'none';
   document.getElementById('member-grid').style.display=isL()?'none':'';
   document.getElementById('tasks-title').textContent=isL()?'All missions':'My missions';
-
   renderAll();initOrbit();
+
+  // ✅ Real-time subscription — tasks table
+  db.channel('tasks-changes')
+    .on('postgres_changes',{event:'*',schema:'public',table:'tasks'},async()=>{
+      await loadFromDB();
+      renderAll();rebuildOrbit();
+    }).subscribe();
+
+  // ✅ Real-time subscription — events table
+  db.channel('events-changes')
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'events'},async()=>{
+      const {data} = await db.from('events').select('*').order('created_at',{ascending:false}).limit(150);
+      if(data) S.events = data.map(e=>({id:e.id?.toString(),type:e.type,actor:e.actor,detail:e.detail,ts:new Date(e.created_at).getTime()}));
+      renderLog();
+    }).subscribe();
 }
 
 /* ══════════════════════════════════════════════════════
-   RENDER — MAIN APP
+   RENDER
 ══════════════════════════════════════════════════════ */
 function renderAll(){renderStats();renderRoster();renderLB();renderLog();renderTasks();if(isL())fillDropdown()}
 
@@ -609,7 +703,7 @@ function renderStats(){
 }
 
 function fillDropdown(){
-  const sel=document.getElementById('fa'); if(!sel)return;
+  const sel=document.getElementById('fa');if(!sel)return;
   const cur=sel.value;
   const opts=S.members.filter(m=>N(m)!==N(me.name));
   sel.innerHTML='<option value="">Choose member…</option>'+opts.map(m=>`<option value="${esc(m)}"${N(m)===N(cur)?' selected':''}>${esc(m)}</option>`).join('');
@@ -727,9 +821,9 @@ function editRow(t){
 }
 
 /* ══════════════════════════════════════════════════════
-   ACTIONS — MAIN APP
+   ✅ ACTIONS — ALL WIRED TO SUPABASE
 ══════════════════════════════════════════════════════ */
-function assignTask(){
+async function assignTask(){
   const title=document.getElementById('ft').value.trim();
   const desc =document.getElementById('fd').value.trim();
   const asgn =document.getElementById('fa').value;
@@ -739,51 +833,65 @@ function assignTask(){
   if(!title){err.innerHTML='⚠ Title is required.';err.style.display='flex';return}
   if(!asgn) {err.innerHTML='⚠ Choose a team member to assign to.';err.style.display='flex';return}
   err.style.display='none';
-  const task={id:uid(),title,desc,assignee:asgn,priority:prio,due,status:'todo',createdAt:Date.now()};
-  S.tasks.push(task);
-  logEv('assigned',`${me.name} assigned "${title}" to ${asgn}`);
-  save();renderAll();rebuildOrbit();
-  document.getElementById('ft').value='';document.getElementById('fd').value='';
-  document.getElementById('fa').value='';document.getElementById('fdue').value='';
-  toast('🚀 Mission launched for '+asgn+'!');
+
+  const task={title,desc,assignee:asgn,priority:prio,due,status:'todo',createdAt:Date.now()};
+  const saved = await dbInsertTask(task);
+  if(saved){
+    task.id = saved.id?.toString();
+    S.tasks.unshift(task);
+    logEv('assigned',`${me.name} assigned "${title}" to ${asgn}`);
+    renderAll();rebuildOrbit();
+    document.getElementById('ft').value='';document.getElementById('fd').value='';
+    document.getElementById('fa').value='';document.getElementById('fdue').value='';
+    toast('🚀 Mission launched for '+asgn+'!');
+  } else {
+    err.innerHTML='⚠ Failed to save. Check Supabase connection.';err.style.display='flex';
+  }
 }
-function setStatus(id,status){
+
+async function setStatus(id,status){
   const t=S.tasks.find(t=>t.id===id);if(!t)return;
   t.status=status;
+  await dbUpdateTaskStatus(id, status);
   const v=status==='in-progress'?'started':status==='done'?'completed':'reopened';
   logEv(v,`${me.name} ${v} "${t.title}"`);
-  save();renderAll();rebuildOrbit();
+  renderAll();rebuildOrbit();
   if(status==='done')confetti();
 }
-function delTask(id){
+
+async function delTask(id){
   const t=S.tasks.find(t=>t.id===id);if(!t)return;
   if(!confirm('Delete "'+t.title+'"?'))return;
+  await dbDeleteTask(id);
   S.tasks=S.tasks.filter(x=>x.id!==id);
   logEv('deleted',`${me.name} deleted "${t.title}"`);
-  save();renderAll();rebuildOrbit();
+  renderAll();rebuildOrbit();
 }
+
 function startEdit(id){editId=id;renderTasks()}
 function cancelEdit(){editId=null;renderTasks()}
-function saveEdit(id){
+
+async function saveEdit(id){
   const t=S.tasks.find(t=>t.id===id);if(!t)return;
   t.title   =document.getElementById('et-'+id).value.trim()||t.title;
   t.desc    =document.getElementById('ed-'+id).value.trim();
   t.priority=document.getElementById('ep-'+id).value;
   t.due     =document.getElementById('edu-'+id).value;
   t.assignee=document.getElementById('ea-'+id).value||t.assignee;
+  await dbUpdateTask(id,{title:t.title,desc:t.desc,priority:t.priority,due:t.due,assignee:t.assignee});
   logEv('edited',`${me.name} edited "${t.title}"`);
-  editId=null;save();renderAll();rebuildOrbit();
+  editId=null;renderAll();rebuildOrbit();
 }
 
 /* ══════════════════════════════════════════════════════
-   VISITOR TRACKING — PANEL RENDERING
+   VISITOR TRACKING — PANEL
 ══════════════════════════════════════════════════════ */
-function openVisitors(){
+async function openVisitors(){
   if(!isL())return;
   document.getElementById('pg-app').classList.remove('active');
   const vp=document.getElementById('pg-visitors');
   vp.style.display='flex';vp.classList.add('active');
-  renderVtAll();
+  await renderVtAll();
 }
 function closeVisitors(){
   const vp=document.getElementById('pg-visitors');
@@ -799,19 +907,19 @@ function vtTab(name,btn){
   if(name==='history')renderVtHistory();
   if(name==='timeline')renderVtTimeline();
 }
-function renderVtAll(){
-  renderVtStats();
-  renderVtToday();
+
+async function renderVtAll(){
+  const logs = await vtLoadVisits();
+  renderVtStats(logs);
+  renderVtToday(logs);
 }
 
-function renderVtStats(){
-  const logs=vtLoad();
+function renderVtStats(logs){
   const today=todayStr();
   const todayLogs=logs.filter(l=>l.date===today);
   const memberSet=new Set(todayLogs.map(l=>l.member));
   const totalMs=todayLogs.reduce((a,l)=>a+(l.duration||0),0);
   const avgMs=memberSet.size?Math.round(totalMs/memberSet.size):0;
-
   document.getElementById('vt-stats').innerHTML=`
     <div class="vt-card"><div class="vt-val" style="color:#34D399">${memberSet.size}<span style="font-size:14px;color:var(--mut)"> / 3</span></div><div class="vt-lbl">Visited today</div><div class="vt-sub">${[...memberSet].join(', ')||'none yet'}</div></div>
     <div class="vt-card"><div class="vt-val" style="color:#7C6AFA">${todayLogs.length}</div><div class="vt-lbl">Sessions today</div><div class="vt-sub">across all members</div></div>
@@ -819,29 +927,22 @@ function renderVtStats(){
     <div class="vt-card"><div class="vt-val" style="color:#0EA5E9">${logs.length}</div><div class="vt-lbl">Total sessions</div><div class="vt-sub">all time</div></div>`;
 }
 
-function renderVtToday(){
+function renderVtToday(logs){
   document.getElementById('vt-today-date').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  const logs=vtLoad();
   const today=todayStr();
   const todayLogs=logs.filter(l=>l.date===today);
-
-  // group by member
   const byMember={};
   todayLogs.forEach(l=>{
     if(!byMember[l.member])byMember[l.member]={sessions:0,total:0,lastSeen:0,live:false};
     byMember[l.member].sessions++;
     byMember[l.member].total+=l.duration||0;
-    if(l.end>byMember[l.member].lastSeen)byMember[l.member].lastSeen=l.end||l.start;
+    if((l.end||l.start)>byMember[l.member].lastSeen)byMember[l.member].lastSeen=l.end||l.start;
     if(!l.end)byMember[l.member].live=true;
   });
-
   const maxDur=Math.max(1,...Object.values(byMember).map(v=>v.total));
-  // only track non-Soundar members
   const trackable=TEAM.filter(m=>N(m)!=='soundar');
   const tbody=document.getElementById('vt-today-body');
-
   let rows='';
-  // visited members
   Object.entries(byMember).sort((a,b)=>b[1].lastSeen-a[1].lastSeen).forEach(([name,data])=>{
     const mc=getMC(name);
     const pct=Math.round((data.total/maxDur)*100);
@@ -854,17 +955,10 @@ function renderVtToday(){
       </div></td>
       <td style="color:var(--dim)">${data.lastSeen?fmtTime(data.lastSeen):'—'}</td>
       <td style="color:var(--dim)">${data.sessions} session${data.sessions>1?'s':''}</td>
-      <td>
-        <div class="dur-wrap">
-          <div class="dur-bg"><div class="dur-fill" style="width:${pct}%;background:${mc.c}"></div></div>
-          <span style="font-size:12px;font-weight:700;min-width:52px">${fmtDur(data.total)}</span>
-        </div>
-      </td>
+      <td><div class="dur-wrap"><div class="dur-bg"><div class="dur-fill" style="width:${pct}%;background:${mc.c}"></div></div><span style="font-size:12px;font-weight:700;min-width:52px">${fmtDur(data.total)}</span></div></td>
       <td><span class="pill pill-today">Visited ✓</span></td>
     </tr>`;
   });
-
-  // not-yet-visited members
   trackable.filter(m=>!byMember[m]).forEach(name=>{
     const mc=getMC(name);
     rows+=`<tr>
@@ -876,36 +970,23 @@ function renderVtToday(){
       <td><span class="pill pill-old">Not yet</span></td>
     </tr>`;
   });
-
-  tbody.innerHTML=rows||`<tr><td colspan="5" class="vt-empty">No visits recorded today yet. Members will appear here once they sign in.</td></tr>`;
+  tbody.innerHTML=rows||`<tr><td colspan="5" class="vt-empty">No visits today yet.</td></tr>`;
 }
 
-function renderVtTimeline(){
-  const logs=vtLoad();
+async function renderVtTimeline(){
+  const logs = await vtLoadVisits();
   const today=todayStr();
   const todayLogs=logs.filter(l=>l.date===today);
   const wrap=document.getElementById('vt-tl-wrap');
-
-  if(!todayLogs.length){
-    wrap.innerHTML='<div class="vt-empty">No sessions today yet.</div>';return;
-  }
-
+  if(!todayLogs.length){wrap.innerHTML='<div class="vt-empty">No sessions today yet.</div>';return;}
   const HOUR_START=8,HOUR_END=22,SPAN=(HOUR_END-HOUR_START)*3600000;
   const hours=[8,10,12,14,16,18,20,22];
-
   const byMember={};
   TEAM.filter(m=>N(m)!=='soundar').forEach(m=>byMember[m]=[]);
   todayLogs.forEach(l=>{if(byMember[l.member])byMember[l.member].push(l)});
-
-  let html=`<div style="padding:0 14px 6px 120px;margin-bottom:4px">
-    <div style="display:flex;justify-content:space-between">
-      ${hours.map(h=>`<span class="tl-rl">${h<12?h+'am':h===12?'12pm':(h-12)+'pm'}</span>`).join('')}
-    </div>
-  </div>
+  let html=`<div style="padding:0 14px 6px 120px;margin-bottom:4px"><div style="display:flex;justify-content:space-between">${hours.map(h=>`<span class="tl-rl">${h<12?h+'am':h===12?'12pm':(h-12)+'pm'}</span>`).join('')}</div></div>
   <div style="background:var(--card);border:1px solid var(--bord);border-radius:12px;overflow:hidden">`;
-
-  const trackable=TEAM.filter(m=>N(m)!=='soundar');
-  trackable.forEach(name=>{
+  TEAM.filter(m=>N(m)!=='soundar').forEach(name=>{
     const sesList=byMember[name]||[];
     const mc=getMC(name);
     const blocks=sesList.map(l=>{
@@ -918,45 +999,27 @@ function renderVtTimeline(){
       const width=Math.max(0.5,right-left);
       return {left,width,dur:l.duration||0,start:l.start,live:!l.end};
     });
-
     html+=`<div class="tl-row">
-      <div class="tl-mem">
-        <div class="av" style="width:22px;height:22px;font-size:9px;background:${mc.bg};color:${mc.c};border:1px solid ${mc.c}44">${inits(name)}</div>
-        <span>${name.split(' ')[0]}</span>
-      </div>
-      <div class="tl-sess">
-        ${blocks.length?blocks.map(b=>`
-          <div class="sess-track">
-            <div class="sess-block" title="${fmtTime(b.start)} — ${fmtDur(b.dur)}"
-              style="left:${b.left}%;width:${b.width}%;background:${mc.bg};color:${mc.c};border:1px solid ${mc.c}44${b.live?';animation:pulse 1.5s ease-in-out infinite':''}">
-              ${b.width>6?fmtDur(b.dur):''}
-            </div>
-          </div>`).join(''):'<div style="color:var(--mut);font-size:11px;padding-top:6px">No sessions today</div>'}
-      </div>
+      <div class="tl-mem"><div class="av" style="width:22px;height:22px;font-size:9px;background:${mc.bg};color:${mc.c};border:1px solid ${mc.c}44">${inits(name)}</div><span>${name.split(' ')[0]}</span></div>
+      <div class="tl-sess">${blocks.length?blocks.map(b=>`<div class="sess-track"><div class="sess-block" title="${fmtTime(b.start)} — ${fmtDur(b.dur)}" style="left:${b.left}%;width:${b.width}%;background:${mc.bg};color:${mc.c};border:1px solid ${mc.c}44${b.live?';animation:pulse 1.5s ease-in-out infinite':''}">${b.width>6?fmtDur(b.dur):''}</div></div>`).join(''):'<div style="color:var(--mut);font-size:11px;padding-top:6px">No sessions today</div>'}</div>
     </div>`;
   });
   html+='</div>';
   wrap.innerHTML=html;
 }
 
-function renderVtHistory(){
-  const logs=vtLoad();
+async function renderVtHistory(){
+  const logs = await vtLoadVisits();
   const filter=document.getElementById('vt-hist-filter')?.value||'all';
   let filtered=filter==='all'?logs:logs.filter(l=>l.member===filter);
   filtered=[...filtered].sort((a,b)=>b.start-a.start);
-
   const today=todayStr();
   const tbody=document.getElementById('vt-hist-body');
   if(!filtered.length){tbody.innerHTML='<tr><td colspan="6" class="vt-empty">No visit history yet.</td></tr>';return;}
-
   tbody.innerHTML=filtered.map(l=>{
-    const mc=getMC(l.member);
-    const isToday=l.date===today;
+    const mc=getMC(l.member);const isToday=l.date===today;
     return `<tr>
-      <td><div style="display:flex;align-items:center;gap:8px">
-        <div class="av" style="width:26px;height:26px;font-size:10px;background:${mc.bg};color:${mc.c};border:1px solid ${mc.c}44">${inits(l.member)}</div>
-        <span style="font-weight:700">${esc(l.member)}</span>
-      </div></td>
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="av" style="width:26px;height:26px;font-size:10px;background:${mc.bg};color:${mc.c};border:1px solid ${mc.c}44">${inits(l.member)}</div><span style="font-weight:700">${esc(l.member)}</span></div></td>
       <td><span class="pill ${isToday?'pill-today':'pill-old'}">${isToday?'Today':fmtDate(l.start)}</span></td>
       <td style="color:var(--dim)">${fmtTime(l.start)}</td>
       <td style="color:var(--dim)">${l.end?fmtTime(l.end):'<span class="pill pill-live"><span class="live-dot"></span>now</span>'}</td>
@@ -1066,12 +1129,15 @@ function rebuildOrbit(){buildSystems()}
    INIT
 ══════════════════════════════════════════════════════ */
 window.addEventListener('DOMContentLoaded',()=>{
-  load();loadMe();
+  loadMe();
   if(me){
     const acct=ACCOUNTS[N(me.name)];
     if(acct&&me.role!==acct.role){me=null;saveMe();return}
-    vtStartSession(); // resume tracking if auto-logged-in
-    bootApp();
+    // Auto-login: load data then boot
+    loadFromDB().then(()=>{
+      vtStartSession();
+      bootApp();
+    });
   }
 });
 </script>
