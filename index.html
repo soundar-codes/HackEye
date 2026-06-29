@@ -732,7 +732,7 @@ function renderLB(){
   const lb=[...S.members].map(m=>{
     const mt=S.tasks.filter(t=>N(t.assignee)===N(m));
     return{name:m,done:mt.filter(t=>t.status==='done').length,total:mt.length,ip:mt.filter(t=>t.status==='in-progress').length};
-  }).sort((a,b)=>b.done-a.done||b.ip-a.ip);
+  }).sort((a,b)=>b.done-a.done||b.ip-a.ip).slice(0,3);
   const el=document.getElementById('lb-list');
   const medals=['🥇','🥈','🥉'];
   el.innerHTML=lb.map((p,i)=>{
